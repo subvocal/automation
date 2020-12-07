@@ -1,0 +1,19 @@
+{
+  "name": "automation",
+  "version": "1.0.0",
+  "description": "Home automation",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Victor Soares <vsoares@subvocal.com>",
+  "license": "MIT",
+  "dependencies": {
+    "ambient-weather-api": "0.0.6",
+    "client": "0.0.1",
+    "log-timestamp": "^0.3.0",
+    "request": "^2.88.2",
+    "wemo-client": "^0.15.0"
+  }
+}
