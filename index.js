@@ -1,11 +1,14 @@
+
+require('dotenv').config()
 const AmbientWeatherApi = require('ambient-weather-api')
 const Wemo = require('wemo-client');
 require('log-timestamp')(function() { return "[" + new Date().toLocaleDateString() +" "+ new Date().toLocaleTimeString() + "] %s"});
 
-const JORDAN_HEATER_SERIAL = "";
-const AMBIENT_WEATHER_API_KEY = "";
-const AMBIENT_WEATHER_APPLICATION_KEY = "";
-const DESIRED_TEMP = 68;
+const JORDAN_HEATER_SERIAL = process.env.JORDAN_HEATER_SERIAL;
+const AMBIENT_WEATHER_MAC_ADDRESS = process.env.AMBIENT_WEATHER_MAC_ADDRESS;
+const AMBIENT_WEATHER_API_KEY = process.env.AMBIENT_WEATHER_API_KEY;
+const AMBIENT_WEATHER_APPLICATION_KEY = process.env.AMBIENT_WEATHER_APPLICATION_KEY;
+const DESIRED_TEMP = process.env.DESIRED_TEMP;
 
 
 function toggleOn(wemoClient) {
@@ -41,6 +44,50 @@ function getName(device) {
     return device.info.name
 }
 
+function checkTempSetHeater() {
+    // fetch the most recent data
+    console.log('Fetching data...')
+    api.deviceData(AMBIENT_WEATHER_MAC_ADDRESS, {
+        limit: 1
+    }).then((deviceData) => {
+        deviceData.forEach((data) => {
+            decideToTurnOnOrOff(data.date, data.tempinf)
+        })
+    }).catch((error) => {
+        console.log("Error: "+ error)
+    })
+}
+
+function decideToTurnOnOrOff(currentTempDateObserved, currentTemp) {
+    if (currentTemp >= DESIRED_TEMP) {
+        bedroomWemo.then((bedroomWemo) => {
+            console.log("The temperature (%s) is at or above the desired temperature (%s°F). Weather station timestamp: [%s°F].", currentTemp, DESIRED_TEMP, currentTempDateObserved);
+            toggleOff(bedroomWemo);
+        });
+    } else {
+        bedroomWemo.then((bedroomWemo) => {
+            console.log("The temperature (%s) is below the desired temperature (%s°F). Weather station timestamp: [%s°F].", currentTemp, DESIRED_TEMP, currentTempDateObserved);
+            toggleOn(bedroomWemo);
+        });
+    }
+}
+
+function main() {
+    bedroomWemo.then((weemoDevice) => {
+        weemoDevice.on('binaryState', function (value) {            
+            let state = (value === "1") ? "on" : "off";
+            console.log('Switch %s is %s', this.device.friendlyName, state);
+        });
+    });
+    
+
+    checkTempSetHeater();
+    setInterval(()=> { checkTempSetHeater() }, 300000);
+    
+    //subscribeToAmbientWeather();
+}
+
+
 function subscribeToAmbientWeather() {
     api.on("connect", () => console.log("Connected to Ambient Weather Realtime API!"));
 
@@ -59,32 +106,5 @@ function subscribeToAmbientWeather() {
     api.connect();
     api.subscribe(AMBIENT_WEATHER_API_KEY)
 }
-
-
-function decideToTurnOnOrOff(currentTempDateObserved, currentTemp) {
-    if (currentTemp >= DESIRED_TEMP) {
-        bedroomWemo.then((bedroomWemo) => {
-            console.log("The temperature (%s) is at or above the desired temperature (%s°F). Weather station timestamp: [%s°F].", currentTemp, DESIRED_TEMP, currentTempDateObserved);
-            toggleOff(bedroomWemo);
-        });
-    } else {
-        bedroomWemo.then((bedroomWemo) => {
-            console.log("The temperature (%s) is below the desired temperature (%s°F). Weather station timestamp: [%s°F].", currentTemp, DESIRED_TEMP, currentTempDateObserved);
-            toggleOn(bedroomWemo);
-        });
-    }
-}
-
-function main() {
-    bedroomWemo.then((weemoDevice) => {
-        weemoDevice.on('binaryState', function (value) {
-            state = (value === '1') ? 'on' : 'off';
-            console.log('Switch %s is %s', this.device.friendlyName, state);
-        });
-    });
-    
-    subscribeToAmbientWeather();
-}
-
 
 main();

@@ -3,17 +3,32 @@
   "version": "1.0.0",
   "description": "Home automation",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "keywords": [],
   "author": "Victor Soares <vsoares@subvocal.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/subvocal/automation.git"
+  },
+  "bugs": {
+    "url": "https://github.com/subvocal/automation/issues"
+  },
+  "scripts": {
+    "start": "nodemon --exec babel-node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
   "dependencies": {
-    "ambient-weather-api": "0.0.6",
+    "ambient-weather-api": "https://github.com/subvocal/ambient-weather-api/tarball/master",
     "client": "0.0.1",
+    "dotenv": "^8.2.0",
     "log-timestamp": "^0.3.0",
-    "request": "^2.88.2",
     "wemo-client": "^0.15.0"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.12.10",
+    "@babel/core": "^7.12.10",
+    "@babel/node": "^7.12.10",
+    "@babel/preset-env": "^7.12.10",
+    "nodemon": "^2.0.6"
   }
 }
