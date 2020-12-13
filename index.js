@@ -1,4 +1,3 @@
-
 require('dotenv').config()
 const AmbientWeatherApi = require('ambient-weather-api')
 const Wemo = require('wemo-client');
@@ -61,12 +60,12 @@ function checkTempSetHeater() {
 function decideToTurnOnOrOff(currentTempDateObserved, currentTemp) {
     if (currentTemp >= DESIRED_TEMP) {
         bedroomWemo.then((bedroomWemo) => {
-            console.log("The temperature (%s) is at or above the desired temperature (%s°F). Weather station timestamp: [%s°F].", currentTemp, DESIRED_TEMP, currentTempDateObserved);
+            console.log("The temperature (%s˚F) is at or above the desired temperature (%s°F). Weather station timestamp: [%s°F].", currentTemp, DESIRED_TEMP, currentTempDateObserved);
             toggleOff(bedroomWemo);
         });
     } else {
         bedroomWemo.then((bedroomWemo) => {
-            console.log("The temperature (%s) is below the desired temperature (%s°F). Weather station timestamp: [%s°F].", currentTemp, DESIRED_TEMP, currentTempDateObserved);
+            console.log("The temperature (%s˚F) is below the desired temperature (%s°F). Weather station timestamp: [%s°F].", currentTemp, DESIRED_TEMP, currentTempDateObserved);
             toggleOn(bedroomWemo);
         });
     }
@@ -84,27 +83,33 @@ function main() {
     checkTempSetHeater();
     setInterval(()=> { checkTempSetHeater() }, 300000);
     
-    //subscribeToAmbientWeather();
+    subscribeToAmbientWeather();
 }
 
 
 function subscribeToAmbientWeather() {
-    api.on("connect", () => console.log("Connected to Ambient Weather Realtime API!"));
-
+    api.on("connect", () => {
+        console.log("Connected to Ambient Weather Realtime API!");
+        api.subscribe(AMBIENT_WEATHER_API_KEY);
+    });
 
     api.on("subscribed", data => {
-        console.log("Subscribed to " + data.devices.length + " device(s): ")
-        console.log(data.devices.map(getName).join(", "))
-        console.log("Listening for temperature updates...")
+        console.log("Subscribed to " + data.devices.length + " device(s): ");
+        console.log(data.devices.map(getName).join(", "));
+        console.log("Listening for temperature updates...");
+    });
+
+    api.on("unsubscribed", data => {
+        console.log("Unsubscribed from " + data.devices.length + " device(s): ");
+        console.log(data.devices.map(getName).join(", "));
     });
 
     api.on("data", data => {
         decideToTurnOnOrOff(data.date, data.tempinf);
-        console.log(data.date + " - " + " current outdoor temperature is: " + data.tempinf + "°F")
+        console.log("Received data: "+ data.date + " - " + " current indoor temperature is: " + data.tempinf + "°F");
     })
 
     api.connect();
-    api.subscribe(AMBIENT_WEATHER_API_KEY)
 }
 
 main();
