@@ -1,4 +1,6 @@
-#!/usr/bin/env node
+#!/usr/bin/env node"
+"use strict";
+
 require('dotenv').config()
 const AmbientWeatherApi = require('ambient-weather-api')
 const Wemo = require('wemo-client');

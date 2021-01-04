@@ -14,8 +14,11 @@
     "url": "https://github.com/subvocal/automation/issues"
   },
   "scripts": {
-    "start": "nodemon --exec babel-node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon --exec babel-node index.js",
+    "start": "node dist/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "mkdir dist && babel index.js -s -d dist",
+    "cleanwin": "rd /s /q esm dist lib .cache>nul 2>&1|echo.>nul"
   },
   "dependencies": {
     "ambient-weather-api": "https://github.com/subvocal/ambient-weather-api/tarball/master",
