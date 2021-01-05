@@ -23,6 +23,7 @@ const MQTT_TOPIC = process.env.MQTT_TOPIC;
 
 
 const client = MQTT.connect(MQTT_HOST, {username: MQTT_USERNAME, password:MQTT_PASSWORD});
+console.log("Connecting to MQTT host: %s", MQTT_HOST);
 
 
 /* Setup Metrics Collection */
