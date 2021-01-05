@@ -42,19 +42,25 @@ const desiredTempGuage = new promClient.Gauge({ name: "desired_temperature", hel
 const wemoStateGuage = new promClient.Gauge({ name: "wemo_state", help: "On/Off state for Wemo", labelNames: ["room"], registers: [register] });
 
 // Define the HTTP server
-const server = http.createServer(async (req, res) => {
+const server = http.createServer( (req, res) => {
     const route = url.parse(req.url).pathname.toString();
     if (route === '/metrics') {
-      // Return all metrics the Prometheus exposition format
-      res.setHeader('Content-Type', register.contentType)
-      res.end(await register.metrics())
-    } else {
-        res.writeHead(404);
-        res.end("404 Not Found");
-    }
+        // Return all metrics the Prometheus exposition format
+        res.setHeader('Content-Type', register.contentType)
+        register.metrics().then( (metricResponse) => {
+            res.end(metricResponse);
+        }).catch( (error) => {
+            console.log("Error generating metrics: %s", error)
+            res.end();
+        });
+      } else {
+          res.writeHead(404);
+          res.end("404 Not Found");
+      }
   });
 // Start the HTTP server which exposes the metrics on http://localhost:3500/metrics
 server.listen(3500);
+console.log("Serving metrics on http://localhost:3500/metrics");
 
 
 
