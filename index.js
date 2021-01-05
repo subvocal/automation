@@ -1,10 +1,13 @@
 #!/usr/bin/env node"
 "use strict";
 
-require('dotenv').config()
-const AmbientWeatherApi = require('ambient-weather-api')
+require('dotenv').config();
+const AmbientWeatherApi = require('ambient-weather-api');
 const Wemo = require('wemo-client');
-const MQTT = require('mqtt')
+const MQTT = require('mqtt');
+const promClient = require('prom-client');
+const http = require('http')
+const url = require('url')
 require('log-timestamp')(function() { return "[" + new Date().toLocaleDateString() +" "+ new Date().toLocaleTimeString() + "] %s"});
 
 const JORDAN_HEATER_SERIAL = process.env.JORDAN_HEATER_SERIAL;
@@ -21,12 +24,47 @@ const MQTT_TOPIC = process.env.MQTT_TOPIC;
 
 const client = MQTT.connect(MQTT_HOST, {username: MQTT_USERNAME, password:MQTT_PASSWORD});
 
+
+/* Setup Metrics Collection */
+// Create a Registry which registers the metrics
+const register = new promClient.Registry();
+// Add a default label which is added to all metrics
+register.setDefaultLabels({
+    service: 'automation'
+});
+// Enable the collection of default metrics
+promClient.collectDefaultMetrics({ register })
+
+// Metrics
+const tempGuage = new promClient.Gauge({ name: "temperature", help: "Temperature in F˚", labelNames: ["room"], registers: [register] });
+const desiredTempGuage = new promClient.Gauge({ name: "desired_temperature", help: "The desired temperature in F˚", labelNames: ["room"], registers: [register] });
+const wemoStateGuage = new promClient.Gauge({ name: "wemo_state", help: "On/Off state for Wemo", labelNames: ["room"], registers: [register] });
+
+// Define the HTTP server
+const server = http.createServer(async (req, res) => {
+    const route = url.parse(req.url).pathname.toString();
+    if (route === '/metrics') {
+      // Return all metrics the Prometheus exposition format
+      res.setHeader('Content-Type', register.contentType)
+      res.end(await register.metrics())
+    } else {
+        res.writeHead(404);
+        res.end("404 Not Found");
+    }
+  });
+// Start the HTTP server which exposes the metrics on http://localhost:3500/metrics
+server.listen(3500);
+
+
+
 function toggleOn(wemoClient) {
     wemoClient.setBinaryState(1);
+    wemoStateGuage.set({room: "jordan"}, 1);
 }
 
 function toggleOff(wemoClient) {
     wemoClient.setBinaryState(0);
+    wemoStateGuage.set({room: "jordan"}, 0);
 }
 
 const bedroomWemo = new Promise((resolve, reject) => {
@@ -48,6 +86,9 @@ const bedroomWemo = new Promise((resolve, reject) => {
 
 
 function decideToTurnOnOrOff(currentTempDateObserved, currentTemp) {
+    desiredTempGuage.set({room: "jordan"}, parseInt(DESIRED_TEMP));
+    tempGuage.set({room: "jordan"}, currentTemp);
+
     if (currentTemp >= DESIRED_TEMP) {
         bedroomWemo.then((bedroomWemo) => {
             console.log("The temperature (%s˚F) is at or above the desired temperature (%s°F). Weather station timestamp: [%s].", currentTemp, DESIRED_TEMP, currentTempDateObserved);
