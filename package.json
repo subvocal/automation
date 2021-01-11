@@ -21,7 +21,6 @@
     "cleanwin": "rd /s /q esm dist lib .cache>nul 2>&1|echo.>nul"
   },
   "dependencies": {
-    "ambient-weather-api": "https://github.com/subvocal/ambient-weather-api/tarball/master",
     "client": "0.0.1",
     "dotenv": "^8.2.0",
     "log-timestamp": "^0.3.0",
@@ -33,7 +32,6 @@
     "@babel/cli": "^7.12.10",
     "@babel/core": "^7.12.10",
     "@babel/node": "^7.12.10",
-    "@babel/plugin-transform-runtime": "^7.12.10",
     "@babel/preset-env": "^7.12.10",
     "nodemon": "^2.0.6"
   }

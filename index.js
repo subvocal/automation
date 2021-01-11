@@ -2,7 +2,6 @@
 "use strict";
 
 require('dotenv').config();
-const AmbientWeatherApi = require('ambient-weather-api');
 const Wemo = require('wemo-client');
 const MQTT = require('mqtt');
 const promClient = require('prom-client');
@@ -11,9 +10,6 @@ const url = require('url')
 require('log-timestamp')(function() { return "[" + new Date().toLocaleDateString() +" "+ new Date().toLocaleTimeString() + "] %s"});
 
 const JORDAN_HEATER_SERIAL = process.env.JORDAN_HEATER_SERIAL;
-const AMBIENT_WEATHER_MAC_ADDRESS = process.env.AMBIENT_WEATHER_MAC_ADDRESS;
-const AMBIENT_WEATHER_API_KEY = process.env.AMBIENT_WEATHER_API_KEY;
-const AMBIENT_WEATHER_APPLICATION_KEY = process.env.AMBIENT_WEATHER_APPLICATION_KEY;
 const DESIRED_TEMP = process.env.DESIRED_TEMP;
 
 const MQTT_HOST = process.env.MQTT_HOST;
@@ -91,7 +87,6 @@ const bedroomWemo = new Promise((resolve, reject) => {
 
 
 
-
 function decideToTurnOnOrOff(currentTempDateObserved, currentTemp) {
     desiredTempGuage.set({room: "jordan"}, parseInt(DESIRED_TEMP));
     tempGuage.set({room: "jordan"}, currentTemp);
@@ -117,11 +112,6 @@ function main() {
         });
     });
     
-
-    checkTempSetHeater();
-    setInterval(()=> { checkTempSetHeater() }, 300000);
-    
-    subscribeToAmbientWeather();
     subscribeAndHandleUpdates();
 }
 
@@ -157,53 +147,5 @@ function subscribeAndHandleUpdates() {
     });
 }
 
-// Integration with AMBIENT WEATHER API
-const api = new AmbientWeatherApi({
-    apiKey: AMBIENT_WEATHER_API_KEY,
-    applicationKey: AMBIENT_WEATHER_APPLICATION_KEY
-});
-
-function getName(device) {
-    return device.info.name
-}
-
-function checkTempSetHeater() {
-    // fetch the most recent data
-    console.log('Fetching data...')
-    api.deviceData(AMBIENT_WEATHER_MAC_ADDRESS, {
-        limit: 1
-    }).then((deviceData) => {
-        deviceData.forEach((data) => {
-            decideToTurnOnOrOff(data.date, data.tempinf)
-        })
-    }).catch((error) => {
-        console.log("Error: "+ error)
-    })
-}
-
-function subscribeToAmbientWeather() {
-    api.on("connect", () => {
-        console.log("Connected to Ambient Weather Realtime API!");
-        api.subscribe(AMBIENT_WEATHER_API_KEY);
-    });
-
-    api.on("subscribed", data => {
-        console.log("Subscribed to " + data.devices.length + " device(s): ");
-        console.log(data.devices.map(getName).join(", "));
-        console.log("Listening for temperature updates...");
-    });
-
-    api.on("unsubscribed", data => {
-        console.log("Unsubscribed from " + data.devices.length + " device(s): ");
-        console.log(data.devices.map(getName).join(", "));
-    });
-
-    api.on("data", data => {
-        decideToTurnOnOrOff(data.date, data.tempinf);
-        console.log("Received data: "+ data.date + " - " + " current indoor temperature is: " + data.tempinf + "°F");
-    })
-
-    api.connect();
-}
 
 main();
